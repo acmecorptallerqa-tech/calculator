@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator - Clean Architecture</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Calculator</h1>
+            <p class="subtitle">Built with Clean Architecture</p>
+        </header>
+
+        <main class="main-content">
+            <div class="calculator-section">
+                <div class="calculator">
+                    <div class="display" id="display">0</div>
+                    
+                    <div class="buttons">
+                        <!-- Row 1 -->
+                        <button class="btn btn-clear" id="btn-clear-entry">CE</button>
+                        <button class="btn btn-clear" id="btn-clear">C</button>
+                        <button class="btn btn-operator" id="btn-backspace">⌫</button>
+                        <button class="btn btn-operator" data-operator="÷">÷</button>
+
+                        <!-- Row 2 -->
+                        <button class="btn btn-number" data-number="7">7</button>
+                        <button class="btn btn-number" data-number="8">8</button>
+                        <button class="btn btn-number" data-number="9">9</button>
+                        <button class="btn btn-operator" data-operator="×">×</button>
+
+                        <!-- Row 3 -->
+                        <button class="btn btn-number" data-number="4">4</button>
+                        <button class="btn btn-number" data-number="5">5</button>
+                        <button class="btn btn-number" data-number="6">6</button>
+                        <button class="btn btn-operator" data-operator="-">-</button>
+
+                        <!-- Row 4 -->
+                        <button class="btn btn-number" data-number="1">1</button>
+                        <button class="btn btn-number" data-number="2">2</button>
+                        <button class="btn btn-number" data-number="3">3</button>
+                        <button class="btn btn-operator" data-operator="+">+</button>
+
+                        <!-- Row 5 -->
+                        <button class="btn btn-number btn-zero" data-number="0">0</button>
+                        <button class="btn btn-number" id="btn-decimal">.</button>
+                        <button class="btn btn-equals" id="btn-equals">=</button>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="history-section">
+                <div class="history-header">
+                    <h2>History</h2>
+                    <button class="btn-text" id="btn-clear-history">Clear</button>
+                </div>
+                <div class="history-list" id="history-list">
+                    <div class="history-empty">No calculations yet</div>
+                </div>
+            </aside>
+        </main>
+
+        <footer class="footer">
+            <p>
+                Built with <strong>Clean Architecture</strong> | 
+                <a href="https://github.com" target="_blank">View Source</a>
+            </p>
+        </footer>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
