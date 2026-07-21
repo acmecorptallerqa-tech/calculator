@@ -1,33 +1,10 @@
-# Dependencies
+reference_repo/
+.venv/
 node_modules/
-package-lock.json
-yarn.lock
-
-# Testing
-coverage/
-*.log
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Build
-dist/
-build/
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+playwright/.auth/
+.qa-runner.json
+.npm-install-hash
+test-results/
+playwright-report/
+__pycache__/
+.pytest_cache/
