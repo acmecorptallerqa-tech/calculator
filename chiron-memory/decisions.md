@@ -1,27 +1,27 @@
 # decision
 
-A technical decision that was made and WHY (which alternatives were discarded).
+A choice made and the reasoning behind it — the path taken over the alternatives.
 
-## The scientific operator symbols added to Operator are `^` (POWER), `√` (SQUARE_ROOT), `%`…
+## The 7 new scientific operators (POWER, SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) were…
 
-What: The scientific operator symbols added to Operator are `^` (POWER), `√` (SQUARE_ROOT), `%` (PERCENTAGE), and the literal text `sin`/`cos`/`tan`/`log` for the trig/log operators, alongside the existing `+ - × ÷`. · Why: — · Where: src/domain/value-objects/Operator.js. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-1 -->
+What: The 7 new scientific operators (POWER, SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) were added only to the `Operator` value object; `CalculatorService.calculate`'s switch statement was deliberately left untouched and still throws "Unsupported operator" for all of them. · Why: this work order scoped only the domain value object (foundation layer); implementing the actual calculation logic is explicitly a separate, later work order. · Where: src/domain/value-objects/Operator.js, src/domain/services/CalculatorService.js · Learned: don't expand scope to implement service-layer behavior when the work order only asks for the domain constant/validation layer. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-2 -->
 
-## Unary vs. binary arity was deliberately left unmodeled on the Operator value object even…
+## Arity for the new scientific operators (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) is h…
 
-What: Unary vs. binary arity was deliberately left unmodeled on the Operator value object even though SQUARE_ROOT, SIN, COS, TAN and LOG are single-operand operations. · Why: the work order scoped only the domain value object; `Calculation`/`CalculatorService` are still hard-wired to `left, operator, right`, and no acceptance criterion asked for an arity helper. Arity modeling (including whether PERCENTAGE is unary `a/100` or binary "a% of b") is deferred to the CalculatorService work order that implements the actual operations. · Where: src/domain/value-objects/Operator.js, src/domain/services/CalculatorService.js. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-2 -->
+What: Arity for the new scientific operators (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) is handled as unary purely inside CalculatorService.calculate()'s switch/private methods; Operator.js and Calculation.js stay unchanged and binary-shaped. · Why: acceptance criteria call calculate() with rightOperand=0 for every unary op, so no domain-level arity modeling was needed; avoids touching Operator/Calculation for this work order. · Where: src/domain/services/CalculatorService.js. · Learned: only add an Operator.isUnary() concept if a future call site needs to distinguish arity itself (e.g. UI validation) rather than always receiving 0. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-0 -->
 
-## Arity for scientific operators is resolved only inside CalculatorService.calculate's swit…
+## PERCENTAGE operator computes unary a/100, not "a% of b".
 
-What: Arity for scientific operators is resolved only inside CalculatorService.calculate's switch — unary ops (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) ignore rightOperand inside their own case, while Operator.js and Calculation.js stay untouched/binary-only. · Why: acceptance criteria call calculate with a dummy 0 rightOperand for unary ops, and the existing 'right operand must be a valid number' guard already accepts that, so no domain-model change was needed. · Where: src/domain/services/CalculatorService.js · Learned: only add Operator.isUnary() (or similar) if arity needs to be enforced/queried outside the service, e.g. when wiring single-operand entry into the UI. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-0 -->
+What: PERCENTAGE operator computes unary a/100, not "a% of b". · Why: acceptance criterion requires calculate(50, PERCENTAGE, 0) === 0.5. · Where: CalculatorService.js #percentage. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-1 -->
 
-## PERCENTAGE operator computes a/100 (unary), not 'a% of b' (binary).
+## LOG operator is natural log (Math.log), and SIN/COS/TAN assume the input is already in ra…
 
-What: PERCENTAGE operator computes a/100 (unary), not 'a% of b' (binary). · Why: settled by acceptance criterion calculate(50, PERCENTAGE, 0) === 0.5. · Where: src/domain/services/CalculatorService.js (#percentage). <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-1 -->
+What: LOG operator is natural log (Math.log), and SIN/COS/TAN assume the input is already in radians. · Why: acceptance criteria fix log(Math.E) === 1; requirements explicitly state radians for trig. · Where: CalculatorService.js #log/#sin/#cos/#tan. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-2 -->
 
-## LOG operator computes the natural logarithm via Math.log, not log10/log2.
+## Arity for scientific operations is resolved inside `CalculatorService` only: unary operat…
 
-What: LOG operator computes the natural logarithm via Math.log, not log10/log2. · Why: acceptance criterion requires log(Math.E) === 1. · Where: src/domain/services/CalculatorService.js (#log). <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-2 -->
+What: Arity for scientific operations is resolved inside `CalculatorService` only: unary operators (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) have switch cases that take `leftOperand` and ignore `rightOperand`, and PERCENTAGE is unary `a/100` (not "a% of b"). `Operator` gained no `isUnary()`, and `Calculation` stays binary, so callers pass `0` as the right operand. The `calculate` guard "Right operand must be a valid number" therefore still applies to unary calls. · Why: the acceptance criteria fix both open questions (`calculate(50, PERCENTAGE, 0) === 0.5`, every unary call passes `0`), and the work order scoped only the domain service; an `isUnary()` on the value object would be dead code until the UI work order needs it. Supersedes the earlier decision that the switch was left untouched. · Where: src/domain/services/CalculatorService.js · Learned: arity lives in the service's switch, not in the domain model; if the UI later needs to know an operator's arity, that is the moment to add `isUnary()` to `Operator`, not before. <!-- id: a099d662-dd6e-45e7-abe9-f4c85bbe6d11-1 -->
 
-## Trigonometric operators (SIN, COS, TAN) assume the operand is in radians, not degrees.
+## POWER stays binary (Math.pow(leftOperand, rightOperand)), unlike the six other new scient…
 
-What: Trigonometric operators (SIN, COS, TAN) assume the operand is in radians, not degrees. · Why: — · Where: src/domain/services/CalculatorService.js. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-3 -->
+What: POWER stays binary (Math.pow(leftOperand, rightOperand)), unlike the six other new scientific operators (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) which are unary and ignore rightOperand. · Why: exponentiation genuinely needs base and exponent, so it fits the pre-existing binary switch/private-method pattern with no special-casing. · Where: CalculatorService.js #power. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-8 -->

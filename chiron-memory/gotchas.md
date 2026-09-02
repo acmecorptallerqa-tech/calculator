@@ -1,11 +1,19 @@
 # gotcha
 
-Something non-obvious that failed or must be kept in mind to avoid repeating (bugs, surprises, lessons).
+A non-obvious pitfall or trap, learned the hard way.
 
-## After the Operator extension, `CalculatorService.calculate`'s switch has no cases for POW…
+## `Operator.fromSymbol` resolves a symbol via a linear `find` over `#OPERATOR_SYMBOLS`, so…
 
-What: After the Operator extension, `CalculatorService.calculate`'s switch has no cases for POWER/SQUARE_ROOT/PERCENTAGE/SIN/COS/TAN/LOG, so it falls into `default: throw "Unsupported operator"` for all seven new operators. · Why: this is the correct interim state for this domain-only work order, not a bug, but it means the new Operator constants aren't usable end-to-end yet. · Where: src/domain/services/CalculatorService.js. · Learned: don't assume the service supports an operator just because Operator.js validates it — check CalculatorService's switch explicitly. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-3 -->
+What: `Operator.fromSymbol` resolves a symbol via a linear `find` over `#OPERATOR_SYMBOLS`, so every symbol in that map must be globally unique across all operators (arithmetic and scientific). · Why: a duplicate symbol would silently resolve to the wrong operator with no validation error. · Where: src/domain/value-objects/Operator.js · Learned: when adding an operator, explicitly verify its symbol doesn't collide with any existing one (verified uniqueness for all 11: +,-,×,÷,^,√,%,sin,cos,tan,log). <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-1 -->
 
-## Math.tan(Math.PI/2) in JS returns ~1.633e16, not Infinity, because π/2 isn't exactly repr…
+## Arity is unmodeled in the domain — `Calculation` entity and `CalculatorService.calculate`…
 
-What: Math.tan(Math.PI/2) in JS returns ~1.633e16, not Infinity, because π/2 isn't exactly representable as a float, so checking the tan output for Infinity/NaN cannot detect the tangent asymptote. · Why: — · Where: src/domain/services/CalculatorService.js (#tan validation). · Learned: detect the asymptote via Math.abs(Math.cos(a)) < tolerance instead (project uses 1e-10, stored as a private static #TAN_ASYMPTOTE_TOLERANCE). <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-4 -->
+What: Arity is unmodeled in the domain — `Calculation` entity and `CalculatorService.calculate` are hard-wired to binary operations (`left, operator, right`), but SQUARE_ROOT, SIN, COS, TAN, LOG are unary, and PERCENTAGE is ambiguous between unary (`a/100`) and binary ("a% of b"). · Why: the Operator value object as specified has no `isUnary()`/arity concept, so this can't be resolved at this layer. · Where: src/domain/value-objects/Operator.js, src/domain/entities/Calculation.js, src/domain/services/CalculatorService.js · Learned: the next work order that implements scientific calculation logic must first decide how arity (and PERCENTAGE's semantics) is expressed in the domain model. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-3 -->
+
+## Math.tan(Math.PI/2) in JS returns ~1.633e16, not Infinity, because π/2 is not exactly rep…
+
+What: Math.tan(Math.PI/2) in JS returns ~1.633e16, not Infinity, because π/2 is not exactly representable in floating point, so tan's asymptote cannot be detected via an Infinity or exact-value check. · Why: — · Where: CalculatorService.js #tan validation. · Learned: detect the asymptote via Math.abs(Math.cos(a)) < tolerance, using a private static #TAN_ASYMPTOTE_TOLERANCE (1e-10). <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-3 -->
+
+## `Math.tan(Math.PI/2)` returns 1.633e16, not `Infinity`, so the tangent asymptote cannot b…
+
+What: `Math.tan(Math.PI/2)` returns 1.633e16, not `Infinity`, so the tangent asymptote cannot be detected by testing the result for non-finiteness. `CalculatorService.#tan` instead throws when `Math.abs(Math.cos(a)) < 1e-10` (the private static `#TAN_ASYMPTOTE_TOLERANCE`). · Why: `Math.PI/2` is not exactly representable as a double, so the cosine there is about 6.1e-17 rather than 0 and the tangent stays finite but meaninglessly large. · Where: src/domain/services/CalculatorService.js · Learned: detect trig asymptotes through the cosine with an explicit tolerance; any tolerance between roughly 1e-15 and 1e-10 works, and 1e-10 was chosen because a tangent above 1e10 is already unusable. <!-- id: 85d96f8a-dcf7-4e00-84f3-951f164796c3-1 -->
