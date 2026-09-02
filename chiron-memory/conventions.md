@@ -41,3 +41,12 @@ What: src/interfaces/web/index.js is being changed from a bootstrap-only entry p
 ## DOM-driven tests for the web interface load the real markup from public/index.html into j…
 
 What: DOM-driven tests for the web interface load the real markup from public/index.html into jsdom and drive it through actual button clicks, instead of testing against a synthetic/mocked DOM fixture · Why: — · Where: tests/interfaces/web/UIManager.test.js · Learned: follow this same real-markup-in-jsdom pattern for future UI interaction tests in this project rather than hand-rolling mock DOM elements. <!-- id: ae8012c2-664a-4080-b08d-85c49d788242-9 -->
+
+## Scientific buttons live in their own `.buttons-scientific` grid above the main keypad, re…
+
+What: Scientific buttons live in their own `.buttons-scientific` grid above the main keypad, reusing the `.buttons` 4-column grid; row 1 is `sin cos tan log`, row 2 is `^ √ %` with `%` given `grid-column: span 2` (the same span idiom `.btn-equals` already uses). Each carries `data-operator` with the exact symbol from `Operator`'s `#OPERATOR_SYMBOLS`. · Why: seven buttons don't divide evenly into four columns; spanning the last one fills the row instead of leaving a hole, and keeps the panel visually deliberate. · Where: public/index.html, public/styles.css · Learned: the `data-operator` value must match `#OPERATOR_SYMBOLS` character for character (`√`, `×`, `÷` are the Unicode glyphs, not ASCII) or `Operator.fromSymbol` throws.
+
+## UI acceptance criteria are verified by a jsdom test that loads the real `public/index.htm…
+
+What: UI acceptance criteria are verified by a jsdom test that loads the real `public/index.html` body into `document.body.innerHTML` and drives it through `element.click()`, rather than by asserting on markup. `DIContainer` and `UIManager` are exported from `src/interfaces/web/index.js` purely to make this possible; the `DOMContentLoaded` bootstrap is unchanged. · Why: clicking the shipped markup proves the wiring end to end (button → controller → use case → domain → display), which a markup snapshot cannot. · Where: tests/interfaces/web/UIManager.test.js, src/interfaces/web/index.js · Learned: the click handlers are async, so await a `setTimeout(…, 0)` flush after each click before asserting on the display.
+

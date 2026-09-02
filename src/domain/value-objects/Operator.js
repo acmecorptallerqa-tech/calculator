@@ -31,6 +31,18 @@ export class Operator {
     Operator.LOG,
   ];
 
+  /**
+   * Operators that take a single operand; the right operand is ignored.
+   */
+  static #UNARY_OPERATORS = [
+    Operator.SQUARE_ROOT,
+    Operator.PERCENTAGE,
+    Operator.SIN,
+    Operator.COS,
+    Operator.TAN,
+    Operator.LOG,
+  ];
+
   static #OPERATOR_SYMBOLS = {
     [Operator.ADD]: '+',
     [Operator.SUBTRACT]: '-',
@@ -78,6 +90,14 @@ export class Operator {
    */
   getSymbol() {
     return Operator.#OPERATOR_SYMBOLS[this._value];
+  }
+
+  /**
+   * Checks whether the operator takes a single operand
+   * @returns {boolean}
+   */
+  isUnary() {
+    return Operator.#UNARY_OPERATORS.includes(this._value);
   }
 
   /**

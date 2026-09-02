@@ -7,6 +7,7 @@
 
 // Domain
 import { CalculatorService } from '../../domain/services/CalculatorService.js';
+import { Operator } from '../../domain/value-objects/Operator.js';
 
 // Infrastructure
 import { LocalStorageCalculationRepository } from '../../infrastructure/repositories/LocalStorageCalculationRepository.js';
@@ -23,7 +24,7 @@ import { CalculatorController } from './controllers/CalculatorController.js';
  * Dependency Injection Container
  * Wires up all dependencies following clean architecture rules
  */
-class DIContainer {
+export class DIContainer {
   constructor() {
     // Infrastructure layer
     this.calculationRepository = new LocalStorageCalculationRepository();
@@ -60,7 +61,7 @@ class DIContainer {
  * UI Manager
  * Handles DOM manipulation and event listeners
  */
-class UIManager {
+export class UIManager {
   constructor(controller) {
     this.controller = controller;
     this.currentInput = '';
@@ -90,9 +91,10 @@ class UIManager {
       button.addEventListener('click', () => this.#handleNumber(button.textContent));
     });
 
-    // Operator buttons
-    document.querySelectorAll('.btn-operator').forEach((button) => {
-      button.addEventListener('click', () => this.#handleOperator(button.textContent));
+    // Operator buttons (arithmetic and scientific)
+    document.querySelectorAll('[data-operator]').forEach((button) => {
+      const symbol = button.dataset.operator;
+      button.addEventListener('click', () => this.#handleOperatorSymbol(symbol));
     });
 
     // Equals button
@@ -103,6 +105,9 @@ class UIManager {
 
     // Clear entry button
     document.getElementById('btn-clear-entry')?.addEventListener('click', () => this.#handleClearEntry());
+
+    // Backspace button
+    document.getElementById('btn-backspace')?.addEventListener('click', () => this.#handleBackspace());
 
     // Decimal button
     document.getElementById('btn-decimal')?.addEventListener('click', () => this.#handleDecimal());
@@ -126,6 +131,37 @@ class UIManager {
       this.currentInput = this.currentInput === '0' ? num : this.currentInput + num;
     }
     this.#updateDisplay(this.currentInput);
+  }
+
+  /**
+   * Routes an operator symbol to the binary or unary flow.
+   * Arity is owned by the domain, not by the markup.
+   * @private
+   * @param {string} symbol
+   */
+  #handleOperatorSymbol(symbol) {
+    if (Operator.fromSymbol(symbol).isUnary()) {
+      return this.#handleUnaryOperator(symbol);
+    }
+    return this.#handleOperator(symbol);
+  }
+
+  /**
+   * Handles single-operand operator clicks (√, %, sin, cos, tan, log).
+   * Applies to the value on the display right away; a pending binary
+   * operation is left untouched, so "5 + 16 √ =" yields 9.
+   * @private
+   * @param {string} symbol
+   */
+  async #handleUnaryOperator(symbol) {
+    const operand = this.currentInput === '' ? '0' : this.currentInput;
+
+    // The domain service ignores the right operand for unary operators
+    const result = await this.controller.calculate(operand, symbol, '0');
+
+    if (await this.#applyResult(result)) {
+      this.waitingForSecondOperand = true;
+    }
   }
 
   /**
@@ -170,17 +206,30 @@ class UIManager {
       this.currentInput
     );
 
-    if (result.success) {
-      this.currentInput = result.data.result.toString();
-      this.#updateDisplay(this.currentInput);
+    if (await this.#applyResult(result)) {
       this.leftOperand = this.currentInput;
-      await this.#loadHistory();
-    } else {
+    }
+  }
+
+  /**
+   * Applies a controller response to the display and history
+   * @private
+   * @param {{success: boolean, data?: any, error?: string}} result
+   * @returns {Promise<boolean>} whether the calculation succeeded
+   */
+  async #applyResult(result) {
+    if (!result.success) {
       this.#updateDisplay(result.error);
       setTimeout(() => {
         this.#handleClearEntry();
       }, 2000);
+      return false;
     }
+
+    this.currentInput = result.data.result.toString();
+    this.#updateDisplay(this.currentInput);
+    await this.#loadHistory();
+    return true;
   }
 
   /**
@@ -219,6 +268,15 @@ class UIManager {
   }
 
   /**
+   * Handles backspace (removes the last typed character)
+   * @private
+   */
+  #handleBackspace() {
+    this.currentInput = this.currentInput.slice(0, -1) || '0';
+    this.#updateDisplay(this.currentInput);
+  }
+
+  /**
    * Handles clear history button click
    * @private
    */
@@ -247,8 +305,7 @@ class UIManager {
     } else if (e.key === 'Escape') {
       this.#handleClearEntry();
     } else if (e.key === 'Backspace') {
-      this.currentInput = this.currentInput.slice(0, -1) || '0';
-      this.#updateDisplay(this.currentInput);
+      this.#handleBackspace();
     }
   }
 
