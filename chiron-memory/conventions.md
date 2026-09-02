@@ -2,6 +2,6 @@
 
 A rule the codebase follows — naming, patterns, and where things live.
 
-## `Operator` is extended by editing exactly two private static fields, `#VALID_OPERATORS` a…
+## `Operator` value object has exactly two extension points, the private static fields `#VAL…
 
-What: `Operator` is extended by editing exactly two private static fields, `#VALID_OPERATORS` and `#OPERATOR_SYMBOLS`. · Why: `fromSymbol`, `fromValue`, `getAllValues` and `getAllSymbols` all derive from those two fields, so no other method needs to change when a new operator is added. · Where: src/domain/value-objects/Operator.js. · Learned: every symbol added to `#OPERATOR_SYMBOLS` must stay unique across the whole map, otherwise `fromSymbol`'s lookup becomes ambiguous. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-0 -->
+What: `Operator` value object has exactly two extension points, the private static fields `#VALID_OPERATORS` and `#OPERATOR_SYMBOLS`; every public method (`fromSymbol`, `fromValue`, `getAllValues`, `getAllSymbols`, constructor validation) derives from those two fields. · Why: keeps the value object's validation/equality/freeze logic untouched when adding new operators. · Where: src/domain/value-objects/Operator.js · Learned: to add a new operator, add the constant, append it to `#VALID_OPERATORS`, and add its symbol to `#OPERATOR_SYMBOLS` — no other code needs to change. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-0 -->
