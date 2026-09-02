@@ -2,9 +2,17 @@
 
 A non-obvious pitfall or trap, learned the hard way.
 
-## After the Operator extension, `CalculatorService.calculate`'s switch has no cases for POW…
+## `Operator.fromSymbol` resolves a symbol via a linear `find` over `#OPERATOR_SYMBOLS`, so…
 
-What: After the Operator extension, `CalculatorService.calculate`'s switch has no cases for POWER/SQUARE_ROOT/PERCENTAGE/SIN/COS/TAN/LOG, so it falls into `default: throw "Unsupported operator"` for all seven new operators. (SUPERSEDED: the switch now implements all seven, and the web UI drives them end to end.) · Why: this is the correct interim state for this domain-only work order, not a bug, but it means the new Operator constants aren't usable end-to-end yet. · Where: src/domain/services/CalculatorService.js. · Learned: don't assume the service supports an operator just because Operator.js validates it — check CalculatorService's switch explicitly. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-3 -->
+What: `Operator.fromSymbol` resolves a symbol via a linear `find` over `#OPERATOR_SYMBOLS`, so every symbol in that map must be globally unique across all operators (arithmetic and scientific). · Why: a duplicate symbol would silently resolve to the wrong operator with no validation error. · Where: src/domain/value-objects/Operator.js · Learned: when adding an operator, explicitly verify its symbol doesn't collide with any existing one (verified uniqueness for all 11: +,-,×,÷,^,√,%,sin,cos,tan,log). <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-1 -->
+
+## Arity is unmodeled in the domain — `Calculation` entity and `CalculatorService.calculate`…
+
+What: Arity is unmodeled in the domain — `Calculation` entity and `CalculatorService.calculate` are hard-wired to binary operations (`left, operator, right`), but SQUARE_ROOT, SIN, COS, TAN, LOG are unary, and PERCENTAGE is ambiguous between unary (`a/100`) and binary ("a% of b"). · Why: the Operator value object as specified has no `isUnary()`/arity concept, so this can't be resolved at this layer. · Where: src/domain/value-objects/Operator.js, src/domain/entities/Calculation.js, src/domain/services/CalculatorService.js · Learned: the next work order that implements scientific calculation logic must first decide how arity (and PERCENTAGE's semantics) is expressed in the domain model. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-3 -->
+
+## Math.tan(Math.PI/2) in JS returns ~1.633e16, not Infinity, because π/2 is not exactly rep…
+
+What: Math.tan(Math.PI/2) in JS returns ~1.633e16, not Infinity, because π/2 is not exactly representable in floating point, so tan's asymptote cannot be detected via an Infinity or exact-value check. · Why: — · Where: CalculatorService.js #tan validation. · Learned: detect the asymptote via Math.abs(Math.cos(a)) < tolerance, using a private static #TAN_ASYMPTOTE_TOLERANCE (1e-10). <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-3 -->
 
 ## `Math.tan(Math.PI/2)` returns 1.633e16, not `Infinity`, so the tangent asymptote cannot b…
 
@@ -22,6 +30,14 @@ What: `CalculatorService.js` has no overflow guard on POWER, so very large expon
 
 What: work orders on this repo land incrementally on the same files, so a "no test coverage exists" work order can find the target test files already partially populated by an earlier or concurrent work order (e.g. WO-1 added Operator scientific-constant tests, WO-3 added 10 CalculatorService scientific test cases) · Why: avoids duplicating existing test cases or misjudging the scope of what's actually missing · Where: tests/domain/value-objects/Operator.test.js, tests/domain/services/CalculatorService.test.js · Learned: always read the current test files first and scope new work to the actual gaps (specific edge cases, exact error-message strings, single-operand behavior) rather than assuming a blank slate. <!-- id: a344a1d6-27ce-44e9-8bb0-63378b7b9191-5 -->
 
-## The `⌫` backspace button (#btn-backspace) in public/index.html has class `btn-operator` b…
+## The `⌫` backspace button (`#btn-backspace`) had class `btn-operator` but no `data-operato…
 
-What: The `⌫` backspace button (#btn-backspace) in public/index.html has class `btn-operator` but no `data-operator` attribute · Why: the current click listener binds on `.btn-operator` and reads textContent as the operator symbol, so clicking backspace stores the literal '⌫' character as the pending operator, making the next `=` press fail with 'An error occurred' · Where: public/index.html, src/interfaces/web/index.js · Learned: switching the operator listener to bind on `[data-operator]` instead of the `.btn-operator` class removes backspace from that path, but backspace then needs to be separately wired to the existing backspace logic (currently only reachable via the keyboard handler) or it will silently do nothing. <!-- id: ae8012c2-664a-4080-b08d-85c49d788242-3 -->
+What: The `⌫` backspace button (`#btn-backspace`) had class `btn-operator` but no `data-operator` attribute, so clicking it stored the literal `'⌫'` as the pending operator, making the next `=` press fail with 'An error occurred'. · Why: The old click handler bound on `.btn-operator` textContent rather than an explicit data attribute, so any button sharing that class was treated as an operator regardless of intent. · Where: public/index.html, src/interfaces/web/index.js (#handleBackspace) · Learned: Fixed by switching binding to `[data-operator]` and wiring backspace through a dedicated `#handleBackspace()` shared with the existing keyboard handler; watch for other buttons still carrying `.btn-operator` without a real operator symbol. <!-- id: ae8012c2-664a-4080-b08d-85c49d788242-2 -->
+
+## `Calculation` is intentionally binary-only by prior domain decision, so after a unary ope…
+
+What: `Calculation` is intentionally binary-only by prior domain decision, so after a unary operation like √16, the calculation history/toString renders the unused right operand, e.g. `16 √ 0 = 4`, which is cosmetic but visible. · Why: Fixing it would require touching the `Calculation` entity, which existing project memory says should stay binary; this was flagged as an open question rather than changed unilaterally. · Where: domain Calculation entity (toString), surfaced via unary scientific operators in the UI · Learned: Do not 'fix' this display quirk without explicit user sign-off, since it stems from an intentional architectural constraint, not a bug. <!-- id: ae8012c2-664a-4080-b08d-85c49d788242-4 -->
+
+## `npm run lint` already fails on `main` before any of this session's changes, due to pre-e…
+
+What: `npm run lint` already fails on `main` before any of this session's changes, due to pre-existing Prettier and `no-unused-vars` errors unrelated to this work. · Why: Confirmed by running lint against the baseline (git show HEAD) version of the touched files and diffing error counts; the one new line added to src/interfaces/web/index.js matches the exact style of its six pre-existing sibling lines. · Where: repo-wide (npm run lint), src/interfaces/web/index.js · Learned: Don't treat lint failures as a regression caused by new work without first checking whether they pre-exist on main; don't run an unrequested formatting pass to 'fix' pre-existing style errors. <!-- id: ae8012c2-664a-4080-b08d-85c49d788242-8 -->
