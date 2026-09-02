@@ -52,6 +52,69 @@ describe('CalculatorService', () => {
     });
   });
 
+  describe('scientific operations', () => {
+    it('should raise a number to a power', () => {
+      const operator = new Operator(Operator.POWER);
+      expect(service.calculate(2, operator, 3)).toBe(8);
+    });
+
+    it('should calculate the square root, ignoring the right operand', () => {
+      const operator = new Operator(Operator.SQUARE_ROOT);
+      expect(service.calculate(16, operator, 0)).toBe(4);
+    });
+
+    it('should calculate a percentage as a decimal', () => {
+      const operator = new Operator(Operator.PERCENTAGE);
+      expect(service.calculate(50, operator, 0)).toBe(0.5);
+    });
+
+    it('should calculate the sine of an angle in radians', () => {
+      const operator = new Operator(Operator.SIN);
+      expect(service.calculate(0, operator, 0)).toBe(0);
+      expect(service.calculate(Math.PI / 2, operator, 0)).toBe(1);
+    });
+
+    it('should calculate the cosine of an angle in radians', () => {
+      const operator = new Operator(Operator.COS);
+      expect(service.calculate(0, operator, 0)).toBe(1);
+      expect(service.calculate(Math.PI, operator, 0)).toBe(-1);
+    });
+
+    it('should calculate the tangent of an angle in radians', () => {
+      const operator = new Operator(Operator.TAN);
+      expect(service.calculate(0, operator, 0)).toBe(0);
+    });
+
+    it('should calculate the natural logarithm', () => {
+      const operator = new Operator(Operator.LOG);
+      expect(service.calculate(Math.E, operator, 0)).toBe(1);
+    });
+
+    it('should throw error for the square root of a negative number', () => {
+      const operator = new Operator(Operator.SQUARE_ROOT);
+      expect(() => service.calculate(-4, operator, 0)).toThrow(
+        'Cannot calculate square root of a negative number'
+      );
+    });
+
+    it('should throw error for the tangent at odd multiples of PI/2', () => {
+      const operator = new Operator(Operator.TAN);
+      expect(() => service.calculate(Math.PI / 2, operator, 0)).toThrow(
+        'Tangent is undefined'
+      );
+    });
+
+    it('should throw error for the logarithm of a non-positive number', () => {
+      const operator = new Operator(Operator.LOG);
+      expect(() => service.calculate(0, operator, 0)).toThrow(
+        'Cannot calculate logarithm of a non-positive number'
+      );
+      expect(() => service.calculate(-1, operator, 0)).toThrow(
+        'Cannot calculate logarithm of a non-positive number'
+      );
+    });
+  });
+
   describe('isValidNumber', () => {
     it('should return true for valid numbers', () => {
       expect(service.isValidNumber('123')).toBe(true);

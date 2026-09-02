@@ -8,12 +8,18 @@ import { Operator } from '../value-objects/Operator.js';
  */
 export class CalculatorService {
   /**
+   * How close |cos(a)| must be to zero for the tangent to count as undefined
+   */
+  static #TAN_ASYMPTOTE_TOLERANCE = 1e-10;
+
+  /**
    * Performs a calculation based on the operator
    * @param {number} leftOperand
    * @param {Operator} operator
-   * @param {number} rightOperand
+   * @param {number} rightOperand - Unused for single-operand operators
+   *   (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG); callers pass 0
    * @returns {number}
-   * @throws {Error} if division by zero is attempted
+   * @throws {Error} if the operation is undefined for the given operands
    */
   calculate(leftOperand, operator, rightOperand) {
     // Validate inputs
@@ -37,6 +43,20 @@ export class CalculatorService {
         return this.#multiply(leftOperand, rightOperand);
       case Operator.DIVIDE:
         return this.#divide(leftOperand, rightOperand);
+      case Operator.POWER:
+        return this.#power(leftOperand, rightOperand);
+      case Operator.SQUARE_ROOT:
+        return this.#squareRoot(leftOperand);
+      case Operator.PERCENTAGE:
+        return this.#percentage(leftOperand);
+      case Operator.SIN:
+        return this.#sin(leftOperand);
+      case Operator.COS:
+        return this.#cos(leftOperand);
+      case Operator.TAN:
+        return this.#tan(leftOperand);
+      case Operator.LOG:
+        return this.#log(leftOperand);
       default:
         throw new Error(`Unsupported operator: ${operator.getValue()}`);
     }
@@ -77,6 +97,79 @@ export class CalculatorService {
       throw new Error('Cannot divide by zero');
     }
     return this.#roundToDecimalPlaces(a / b, 10);
+  }
+
+  /**
+   * Power operation: a raised to the power of b
+   * @private
+   */
+  #power(a, b) {
+    return this.#roundToDecimalPlaces(Math.pow(a, b), 10);
+  }
+
+  /**
+   * Square root operation (single operand)
+   * Business rule: the square root of a negative number is not a real number
+   * @private
+   * @throws {Error} if the operand is negative
+   */
+  #squareRoot(a) {
+    if (a < 0) {
+      throw new Error('Cannot calculate square root of a negative number');
+    }
+    return this.#roundToDecimalPlaces(Math.sqrt(a), 10);
+  }
+
+  /**
+   * Percentage operation (single operand): a% expressed as a decimal
+   * @private
+   */
+  #percentage(a) {
+    return this.#roundToDecimalPlaces(a / 100, 10);
+  }
+
+  /**
+   * Sine operation (single operand, angle in radians)
+   * @private
+   */
+  #sin(a) {
+    return this.#roundToDecimalPlaces(Math.sin(a), 10);
+  }
+
+  /**
+   * Cosine operation (single operand, angle in radians)
+   * @private
+   */
+  #cos(a) {
+    return this.#roundToDecimalPlaces(Math.cos(a), 10);
+  }
+
+  /**
+   * Tangent operation (single operand, angle in radians)
+   * Business rule: the tangent is undefined at odd multiples of PI/2.
+   * Math.tan does not return Infinity there because PI/2 is not exactly
+   * representable, so the asymptote is detected through the cosine instead.
+   * @private
+   * @throws {Error} if the operand is an odd multiple of PI/2
+   */
+  #tan(a) {
+    if (Math.abs(Math.cos(a)) < CalculatorService.#TAN_ASYMPTOTE_TOLERANCE) {
+      throw new Error('Tangent is undefined at odd multiples of \u03C0/2');
+    }
+    return this.#roundToDecimalPlaces(Math.tan(a), 10);
+  }
+
+  /**
+   * Natural logarithm operation (single operand)
+   * Business rule: the logarithm is only defined for positive numbers
+   * @private
+   * @throws {Error} if the operand is zero or negative
+   */
+  #log(a) {
+    if (a <= 0) {
+      throw new Error('Cannot calculate logarithm of a non-positive number');
+    }
+    return this.#roundToDecimalPlaces(Math.log(a), 10);
   }
 
   /**
