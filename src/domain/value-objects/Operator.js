@@ -1,7 +1,7 @@
 /**
  * Value Object: Operator
  *
- * Represents an arithmetic operator with validation.
+ * Represents an arithmetic or scientific operator with validation.
  * Immutable - equality is based on value, not identity.
  */
 export class Operator {
@@ -9,12 +9,26 @@ export class Operator {
   static SUBTRACT = 'SUBTRACT';
   static MULTIPLY = 'MULTIPLY';
   static DIVIDE = 'DIVIDE';
+  static POWER = 'POWER';
+  static SQUARE_ROOT = 'SQUARE_ROOT';
+  static PERCENTAGE = 'PERCENTAGE';
+  static SIN = 'SIN';
+  static COS = 'COS';
+  static TAN = 'TAN';
+  static LOG = 'LOG';
 
   static #VALID_OPERATORS = [
     Operator.ADD,
     Operator.SUBTRACT,
     Operator.MULTIPLY,
     Operator.DIVIDE,
+    Operator.POWER,
+    Operator.SQUARE_ROOT,
+    Operator.PERCENTAGE,
+    Operator.SIN,
+    Operator.COS,
+    Operator.TAN,
+    Operator.LOG,
   ];
 
   static #OPERATOR_SYMBOLS = {
@@ -22,6 +36,13 @@ export class Operator {
     [Operator.SUBTRACT]: '-',
     [Operator.MULTIPLY]: '×',
     [Operator.DIVIDE]: '÷',
+    [Operator.POWER]: '^',
+    [Operator.SQUARE_ROOT]: '√',
+    [Operator.PERCENTAGE]: '%',
+    [Operator.SIN]: 'sin',
+    [Operator.COS]: 'cos',
+    [Operator.TAN]: 'tan',
+    [Operator.LOG]: 'log',
   };
 
   /**
