@@ -2,6 +2,6 @@
 
 A memory that clashes with newer reality — flagged to be resolved.
 
-## A prior project memory recorded "arity is unmodeled in the domain" as an open gotcha (Cal…
+## A previously flagged open contradiction ('does the UI need Operator to know its own arity…
 
-What: A prior project memory recorded "arity is unmodeled in the domain" as an open gotcha (Calculation/CalculatorService hard-wired to binary ops despite unary SQUARE_ROOT/SIN/COS/TAN/LOG and ambiguous PERCENTAGE). · Why: this work order resolves it only at the service layer (switch-level unary handling, PERCENTAGE defined as a/100) while deliberately leaving Operator.js and Calculation.js untouched. · How to apply: treat the domain-level arity question as still open — re-evaluate if a future caller needs to know an operator's arity directly instead of always passing rightOperand=0. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-7 -->
+What: A previously flagged open contradiction ('does the UI need Operator to know its own arity?') is resolved by the scientific-buttons work order: yes, isUnary() should be added to Operator now · Why: — · Where: src/domain/value-objects/Operator.js · Learned: close out this contradiction in memory once isUnary() lands and is used by the UI wiring. <!-- id: ae8012c2-664a-4080-b08d-85c49d788242-2 -->

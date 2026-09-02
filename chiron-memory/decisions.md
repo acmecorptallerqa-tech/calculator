@@ -2,26 +2,26 @@
 
 A choice made and the reasoning behind it — the path taken over the alternatives.
 
-## The 7 new scientific operators (POWER, SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) were…
+## The scientific operator symbols added to Operator are `^` (POWER), `√` (SQUARE_ROOT), `%`…
 
-What: The 7 new scientific operators (POWER, SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) were added only to the `Operator` value object; `CalculatorService.calculate`'s switch statement was deliberately left untouched and still throws "Unsupported operator" for all of them. · Why: this work order scoped only the domain value object (foundation layer); implementing the actual calculation logic is explicitly a separate, later work order. · Where: src/domain/value-objects/Operator.js, src/domain/services/CalculatorService.js · Learned: don't expand scope to implement service-layer behavior when the work order only asks for the domain constant/validation layer. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-2 -->
+What: The scientific operator symbols added to Operator are `^` (POWER), `√` (SQUARE_ROOT), `%` (PERCENTAGE), and the literal text `sin`/`cos`/`tan`/`log` for the trig/log operators, alongside the existing `+ - × ÷`. · Why: — · Where: src/domain/value-objects/Operator.js. <!-- id: 387c5d83-37a7-440a-aefa-dcac89c49e76-1 -->
 
-## Arity for the new scientific operators (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) is h…
+## LOG operator computes the natural logarithm via Math.log, not log10/log2.
 
-What: Arity for the new scientific operators (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) is handled as unary purely inside CalculatorService.calculate()'s switch/private methods; Operator.js and Calculation.js stay unchanged and binary-shaped. · Why: acceptance criteria call calculate() with rightOperand=0 for every unary op, so no domain-level arity modeling was needed; avoids touching Operator/Calculation for this work order. · Where: src/domain/services/CalculatorService.js. · Learned: only add an Operator.isUnary() concept if a future call site needs to distinguish arity itself (e.g. UI validation) rather than always receiving 0. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-0 -->
+What: LOG operator computes the natural logarithm via Math.log, not log10/log2. · Why: acceptance criterion requires log(Math.E) === 1. · Where: src/domain/services/CalculatorService.js (#log). <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-2 -->
 
-## PERCENTAGE operator computes unary a/100, not "a% of b".
+## Trigonometric operators (SIN, COS, TAN) assume the operand is in radians, not degrees.
 
-What: PERCENTAGE operator computes unary a/100, not "a% of b". · Why: acceptance criterion requires calculate(50, PERCENTAGE, 0) === 0.5. · Where: CalculatorService.js #percentage. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-1 -->
-
-## LOG operator is natural log (Math.log), and SIN/COS/TAN assume the input is already in ra…
-
-What: LOG operator is natural log (Math.log), and SIN/COS/TAN assume the input is already in radians. · Why: acceptance criteria fix log(Math.E) === 1; requirements explicitly state radians for trig. · Where: CalculatorService.js #log/#sin/#cos/#tan. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-2 -->
-
-## Arity for scientific operations is resolved inside `CalculatorService` only: unary operat…
-
-What: Arity for scientific operations is resolved inside `CalculatorService` only: unary operators (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) have switch cases that take `leftOperand` and ignore `rightOperand`, and PERCENTAGE is unary `a/100` (not "a% of b"). `Operator` gained no `isUnary()`, and `Calculation` stays binary, so callers pass `0` as the right operand. The `calculate` guard "Right operand must be a valid number" therefore still applies to unary calls. · Why: the acceptance criteria fix both open questions (`calculate(50, PERCENTAGE, 0) === 0.5`, every unary call passes `0`), and the work order scoped only the domain service; an `isUnary()` on the value object would be dead code until the UI work order needs it. Supersedes the earlier decision that the switch was left untouched. · Where: src/domain/services/CalculatorService.js · Learned: arity lives in the service's switch, not in the domain model; if the UI later needs to know an operator's arity, that is the moment to add `isUnary()` to `Operator`, not before. <!-- id: a099d662-dd6e-45e7-abe9-f4c85bbe6d11-1 -->
+What: Trigonometric operators (SIN, COS, TAN) assume the operand is in radians, not degrees. · Why: — · Where: src/domain/services/CalculatorService.js. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-3 -->
 
 ## POWER stays binary (Math.pow(leftOperand, rightOperand)), unlike the six other new scient…
 
 What: POWER stays binary (Math.pow(leftOperand, rightOperand)), unlike the six other new scientific operators (SQUARE_ROOT, PERCENTAGE, SIN, COS, TAN, LOG) which are unary and ignore rightOperand. · Why: exponentiation genuinely needs base and exponent, so it fits the pre-existing binary switch/private-method pattern with no special-casing. · Where: CalculatorService.js #power. <!-- id: eb9294e6-5120-4763-ac0e-47e126808640-8 -->
+
+## Operator arity (unary vs binary) should be exposed via an isUnary() instance method added…
+
+What: Operator arity (unary vs binary) should be exposed via an isUnary() instance method added to the Operator value object, not via a hardcoded list of unary symbols in the UI layer · Why: hardcoding the unary list in HTML classes or in UIManager would leak a domain rule into the presentation layer, which this project's Clean Architecture conventions forbid; a prior recorded decision explicitly deferred adding isUnary() until the UI actually needed to know arity · Where: src/domain/value-objects/Operator.js · Learned: when the presentation layer needs a domain classification, add the accessor to the domain value object instead of duplicating the rule elsewhere. <!-- id: ae8012c2-664a-4080-b08d-85c49d788242-1 -->
+
+## A shared private #applyResult(result) method is being extracted in UIManager so both the…
+
+What: A shared private #applyResult(result) method is being extracted in UIManager so both the new unary-operator path and the existing binary/equals path apply calculation results through identical logic · Why: keeps success/error handling, including the 2-second error-message auto-reset, consistent across both calculation paths instead of duplicating it · Where: src/interfaces/web/index.js · Learned: when adding a new calculation trigger path to UIManager, route it through #applyResult() rather than reimplementing result/error display. <!-- id: ae8012c2-664a-4080-b08d-85c49d788242-10 -->
